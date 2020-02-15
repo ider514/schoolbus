@@ -23,7 +23,7 @@ def get_sample():
     try:
         return render_template('index.html')
     except TemplateNotFound:
-	print ('template not found')
+        print ('template not found')
         abort(404)
 
 # ___Dashboard backend___
@@ -282,4 +282,3 @@ def insert():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
-
