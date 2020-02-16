@@ -23,10 +23,11 @@ def get_sample():
     try:
         return render_template('index.html')
     except TemplateNotFound:
-        print ('template not found')
+        print('template not found')
         abort(404)
 
 # ___Dashboard backend___
+
 
 @app.route('/dash_schools/<email>/<password>', methods=['GET', 'POST'])
 def dash_schools(email, password):
@@ -48,6 +49,7 @@ def dash_schools(email, password):
         db_schools.insert_one(new_school)
         return 'success'
 
+
 @app.route('/dash_connect', methods=['POST'])
 def dash_connect():
     data = request.get_json()
@@ -60,6 +62,25 @@ def dash_connect():
     db_location.update_one({'licensenumber': data['bus']}, {'$set': found_bus})
     db_schools.update_one({'username': data['school']}, {'$set': found_school})
     return 'success'
+
+
+@app.route('/dash_connect_bus', methods=['POST'])
+def dash_connect_bus():
+    data = request.get_json()
+    school = data['school']
+    bus = data['bus']
+
+    found_school = db_schools.find_one({'username': school})
+    found_bus = db_location.find_one({'licensenumber': bus})
+    found_bus['school'] = school
+    found_school['buses'].append({
+        'bus': found_bus['_id'],
+        'route': ''
+    })
+    db_location.update_one({'licensenumber': bus}, {'$set': found_bus})
+    db_schools.update_one({'username': school}, {'$set': found_school})
+    return 'success'
+
 
 @app.route('/dash_buses/<id>', methods=['GET', 'POST'])
 def dash_buses(id):
@@ -84,6 +105,7 @@ def dash_buses(id):
             return jsonify(return_data)
     if request.method == 'POST':
         data = request.get_json()
+
 
 @app.route('/dash_routes/<id>', methods=['GET', 'POST'])
 def dash_routes(id):
@@ -143,7 +165,8 @@ def dash_routes(id):
         print ('route added')
         return 'success'
 
-@app.route('/dash_users/<id>', methods=['GET','POST'])
+
+@app.route('/dash_users/<id>', methods=['GET', 'POST'])
 def dash_users(id):
     if request.method == 'GET':
         if id == 'all':
@@ -154,7 +177,7 @@ def dash_users(id):
             return jsonify(data)
         else:
             query = {'school': id}
-            found_users = db_users.find(query,{'_id': False })
+            found_users = db_users.find(query, {'_id': False})
             return_data = []
             for x in found_users:
                 return_data.append(x)
@@ -170,51 +193,49 @@ def dash_users(id):
         db_users.insert_one(new_user)
         return 'success'
 
+
 @app.route('/dash_login/<email>/<password>', methods=['GET'])
 def dash_login(email, password):
     document = {'username': email}
     user = db_schools.find_one(document)
     if email == 'admin' and user['password'] == password:
-        print ('admin')
+        print('admin')
         return jsonify('admin')
-    elif user is None :
-        print (email)
+    elif user is None:
+        print(email)
         return jsonify('error')
     elif user['password'] == password:
-        print (email)
+        print(email)
         return jsonify('success')
-
 
 
 # ___Mobile backend___
 
-def get_list(dict):
-    return list(dict.keys())
-
 @app.route('/login/<email>/<password>', methods=['GET'])
 def login(email, password):
-    print (email, password)
+    print(email, password)
     document = {'username': email}
     user = db_users.find_one(document)
     if user is None:
-        print ('Username not found')
+        print('Username not found')
         return 'Username not found'
     if user['password'] == password:
-        print ('success')
+        print('success')
         return 'success' + user['school']
     else:
-        print ('Wrong password')
+        print('Wrong password')
 
         return 'Wrong password'
+
 
 @app.route('/verify', methods=['POST'])
 def verify():
     school = request.args.get('school')
-    print (school)
+    print(school)
     id = request.args.get('id')
-    print (id)
+    print(id)
     email = request.args.get('email')
-    print (email)
+    print(email)
 
     document = {'username': school}
     found_school = db_schools.find_one(document)
@@ -226,22 +247,23 @@ def verify():
         # Out (second time)
         if user['log'][-1][-8:] == str(id):
             log = ('O ' + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + ' ' + id)
-            print (user['log'][-1][0])
+            print(user['log'][-1][0])
             if user['log'][-1][0] == 'O':
-                print ('logged twice')
+                print('logged twice')
                 return 'logged twice'
         # In (first time)
-        else :
+        else:
             log = ('I ' + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + ' ' + id)
         # Update log
         user['log'].append(log)
         db_users.update_one({'username': email}, {"$set": user})
 
-        print ('logged')
+        print('logged')
         return 'logged'
     if found_school['verification'] != int(id):
-        print ('wrong id')
+        print('wrong id')
         return 'wrong id'
+
 
 @app.route('/log/<email>', methods=['GET'])
 def log(email):
@@ -274,9 +296,9 @@ def bus_stops(school, route):
             my_stop = found_bus[x]['stops']
     return jsonify(my_stop)
 
+
 @app.route('/insert', methods=['get'])
 def insert():
-    db_schools.insert_one({"_id": "erdenet", 'buses':[{"52":[{'lat':1, 'lon': 1}, {'lat': 1, 'lon':1}]}, {"59":[{'lat':1, 'lon': 1}, {'lat': 1, 'lon':1}]}]})
     return 'done'
 
 
